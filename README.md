@@ -9,6 +9,19 @@ Search your Lambda functions
 [![License](https://img.shields.io/npm/l/lambda-function-search.svg)](https://github.com/hideokamoto/lambda-function-search/blob/master/package.json)
 
 <!-- toc -->
+
+## Requirements
+
+- Node.js >= 18.0.0
+
+## What's New in v0.6.0
+
+- ✨ **Modernized Dependencies**: Migrated to AWS SDK v3 and oclif v4
+- 🔒 **Security**: Fixed all 12 security vulnerabilities
+- 🚀 **Updated Runtime Support**: Added support for latest Lambda runtimes (Node.js 18/20/22, Python 3.11/3.12/3.13, etc.)
+- 🌍 **Expanded Regions**: Updated AWS region list to include all current regions
+- 🛠️ **Developer Experience**: Migrated from TSLint to ESLint, updated TypeScript to v5
+
 # Install
 
 ```
@@ -29,10 +42,12 @@ OPTIONS
   -A, --showAll          Show all function data
 
   -R, --runtime=runtime  Lambda runtime
-                         Example: nodejs, nodejs4.3, nodejs6.10, nodejs8.10, 
-                         java8, python2.7, python3.6, python3.7, 
-                         dotnetcore1.0, dotnetcore2.0, dotnetcore2.1, 
-                         nodejs4.3-edge, go1.x, ruby2.5, provided
+                         Example: nodejs18.x, nodejs20.x, nodejs22.x,
+                         python3.11, python3.12, python3.13,
+                         java11, java17, java21,
+                         dotnet6, dotnet8,
+                         ruby3.2, ruby3.3,
+                         provided.al2, provided.al2023
 
   -h, --help             show CLI help
 
@@ -79,8 +94,8 @@ serverlessContactForm
 ## Search by Runtime
 
 ```bash
-$ lfs --region us-east-1 --runtime nodejs6.10 
-Search condition: Runtime === nodejs6.10
+$ lfs --region us-east-1 --runtime nodejs20.x
+Search condition: Runtime === nodejs20.x
 Matched Functions: 5 / 43
 ====
 ContactFormLambda
