@@ -20,6 +20,7 @@
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
     "eslint": "^8.57.0",
+    "np": "^10.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
@@ -48,9 +49,19 @@
   "scripts": {
     "build": "rm -rf lib && tsc",
     "prepack": "npm run build",
+    "prepublishOnly": "npm run build && npm test",
     "lint": "eslint src --ext .ts",
     "posttest": "npm run lint && tsc -p . --noEmit",
-    "test": "echo \"No tests yet\""
+    "test": "echo \"No tests yet\"",
+    "release": "np"
   },
-  "types": "lib/index.d.ts"
+  "types": "lib/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "np": {
+    "yarn": true,
+    "contents": ".",
+    "releaseDraft": false
+  }
 }
