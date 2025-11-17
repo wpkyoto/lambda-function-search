@@ -1,5 +1,5 @@
 import {Command, Flags} from '@oclif/core'
-import { LambdaClient, ListFunctionsCommand, FunctionConfiguration } from '@aws-sdk/client-lambda'
+import { LambdaClient, ListFunctionsCommand, FunctionConfiguration, LambdaClientConfig } from '@aws-sdk/client-lambda'
 import { fromIni } from '@aws-sdk/credential-providers'
 import chalk from 'chalk'
 
@@ -83,10 +83,6 @@ class LambdaFunctionSearch extends Command {
     '<%= config.bin %> --region us-east-1 --search myfunction',
   ]
 
-  private NextMarker: string | undefined = undefined
-  private amount: number = 0
-  private client: LambdaClient | undefined
-
   static flags = {
     help: Flags.help({char: 'h'}),
     // runtime
@@ -134,15 +130,17 @@ class LambdaFunctionSearch extends Command {
     }),
   }
 
-  async listAllFunctions(query: ISearchQuery = {}, functions: FunctionConfiguration[] = []): Promise<FunctionConfiguration[]> {
-    if (!this.client) {
-      throw new Error('Failed to initialize AWS SDK Class')
-    }
+  private async listAllFunctions(
+    client: LambdaClient,
+    query: ISearchQuery = {},
+    nextMarker?: string,
+    functions: FunctionConfiguration[] = [],
+    totalAmount: number = 0
+  ): Promise<{ functions: FunctionConfiguration[], amount: number }> {
     const command = new ListFunctionsCommand({
-      Marker: this.NextMarker
+      Marker: nextMarker
     })
-    const { NextMarker, Functions } = await this.client.send(command)
-    this.NextMarker = NextMarker
+    const { NextMarker, Functions } = await client.send(command)
     const targetFunctions = !Functions ? [] : Functions.filter((func: FunctionConfiguration) => {
       if (query.name) {
         const reg = new RegExp(query.name)
@@ -152,26 +150,28 @@ class LambdaFunctionSearch extends Command {
       return true
     })
     const items = functions.concat(targetFunctions)
-    this.amount += Functions ? Functions.length : 0
-    if (this.NextMarker) {
-      return this.listAllFunctions(query, items)
+    const amount = totalAmount + (Functions ? Functions.length : 0)
+    if (NextMarker) {
+      return this.listAllFunctions(client, query, NextMarker, items, amount)
     }
-    return items
+    return { functions: items, amount }
   }
 
   async getAllRegionFuncs(
     query: ISearchQuery,
-    clientConfig: { profile?: string } = {},
-  ) {
-    return await Promise.all(regions.map(region => {
-      return this.worker(query, {
+    clientConfig: { profile?: string },
+    showAll: boolean
+  ): Promise<void> {
+    // Execute sequentially to avoid race conditions with shared state
+    for (const region of regions) {
+      await this.worker(query, {
         ...clientConfig,
         region
-      })
-    }))
+      }, showAll)
+    }
   }
 
-  async run() {
+  async run(): Promise<void> {
     const {flags} = await this.parse(LambdaFunctionSearch)
     const queryBuilder = QueryFactory.init(this.log.bind(this))
     if (flags.runtime) queryBuilder.addRuntime(flags.runtime)
@@ -181,33 +181,32 @@ class LambdaFunctionSearch extends Command {
     if (flags.region) {
       if (flags.region === 'all') {
         if (flags.profile) clientConfig.profile = flags.profile
-        return this.getAllRegionFuncs(queryBuilder.getQuery(), clientConfig)
+        return this.getAllRegionFuncs(queryBuilder.getQuery(), clientConfig, flags.showAll)
       }
       clientConfig.region = flags.region
     }
     if (flags.profile) clientConfig.profile = flags.profile
-    return this.worker(queryBuilder.getQuery(), clientConfig)
+    return this.worker(queryBuilder.getQuery(), clientConfig, flags.showAll)
   }
 
-  async worker(
+  private async worker(
     query: ISearchQuery,
-    clientConfig: { profile?: string, region?: string } = {},
+    clientConfig: { profile?: string, region?: string },
+    showAll: boolean
   ) {
-    const {flags} = await this.parse(LambdaFunctionSearch)
-    const config: any = {}
+    const config: LambdaClientConfig = {}
     if (clientConfig.region) config.region = clientConfig.region
     if (clientConfig.profile) {
       config.credentials = fromIni({ profile: clientConfig.profile })
     }
-    this.client = new LambdaClient(config)
+    const client = new LambdaClient(config)
     try {
-      this.amount = 0
-      const result = await this.listAllFunctions(query)
-      this.log(`=== ${chalk.green('Matched Functions')}: ${result.length} / ${this.amount} ===`)
+      const { functions: result, amount } = await this.listAllFunctions(client, query)
+      this.log(`=== ${chalk.green('Matched Functions')}: ${result.length} / ${amount} ===`)
       if (clientConfig.region) this.log(`${chalk.green('Region')} : ${clientConfig.region}`)
       result.forEach((item: FunctionConfiguration) => {
         this.log(item.FunctionName || 'unknown')
-        if (flags.showAll) console.log(item)
+        if (showAll) console.log(item)
       })
     } catch (e) {
       this.error(chalk.red(String(e)))
