@@ -32,7 +32,6 @@
   },
   "files": {
     "include": ["src/**/*.ts", "bin/**/*"],
-    "ignore": ["node_modules", "lib", "*.js"]
+    "ignore": ["node_modules", "lib", "*.js", "biome.json"]
   }
 }
-
