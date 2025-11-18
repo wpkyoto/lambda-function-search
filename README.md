@@ -147,6 +147,7 @@ serverlessContactForm
 
 ```bash
 $ lfs --region us-east-1 --search Form --showAll
+# Or: npx lambda-function-search --region us-east-1 --search Form --showAll
 Search condition: FunctionName contains Form
 === Matched Functions: 2 / 43 ===
 Region : us-east-1
@@ -169,6 +170,7 @@ serverlessContactForm
 
 ```bash
 $ lfs --region us-east-1 --profile my-profile
+# Or: npx lambda-function-search --region us-east-1 --profile my-profile
 === Matched Functions: 5 / 5 ===
 Region : us-east-1
 ...
@@ -178,6 +180,7 @@ Region : us-east-1
 
 ```bash
 $ lfs --region us-east-1 --runtime nodejs20.x --search Form
+# Or: npx lambda-function-search --region us-east-1 --runtime nodejs20.x --search Form
 Search condition: Runtime === nodejs20.x
 Search condition: FunctionName contains Form
 === Matched Functions: 2 / 43 ===
