@@ -1,7 +1,7 @@
 {
   "name": "lambda-function-search",
   "description": "Search your Lambda functions",
-  "version": "0.6.0",
+  "version": "0.5.0",
   "author": "Hidetaka Okamoto <info@wp-kyoto.net> (https://wp-kyoto.net)",
   "bin": {
     "lambda-function-search": "./bin/run",
@@ -20,6 +20,7 @@
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
     "eslint": "^8.57.0",
+    "np": "^10.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
   },
@@ -44,12 +45,16 @@
       "target": "./lib/index.js"
     }
   },
-  "repository": "hideokamoto/lambda-function-search",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hideokamoto/lambda-function-search.git"
+  },
   "scripts": {
     "build": "rm -rf lib && tsc",
     "prepack": "npm run build",
     "lint": "eslint src --ext .ts",
     "posttest": "npm run lint && tsc -p . --noEmit",
+    "release": "np",
     "test": "echo \"No tests yet\""
   },
   "types": "lib/index.d.ts"
