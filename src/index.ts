@@ -1,9 +1,10 @@
+
 import { Command, Flags } from '@oclif/core';
 import {
   LambdaClient,
   ListFunctionsCommand,
-  FunctionConfiguration,
-  LambdaClientConfig,
+  type FunctionConfiguration,
+  type LambdaClientConfig,
 } from '@aws-sdk/client-lambda';
 import { fromIni } from '@aws-sdk/credential-providers';
 import chalk from 'chalk';
@@ -61,25 +62,23 @@ interface IQueryBuilder {
   getQuery(): ISearchQuery;
 }
 
-class QueryFactory {
-  public static init(log: (message?: string) => void): IQueryBuilder {
-    const query: ISearchQuery = {};
-    return {
-      addRuntime(runtime: IRuntime) {
-        log(`${chalk.green('Search condition')}: Runtime === ${runtime}`);
-        query.Runtime = runtime;
-        return this;
-      },
-      addSearchQuery(name: string) {
-        log(`${chalk.green('Search condition')}: FunctionName contains ${name}`);
-        query.name = name;
-        return this;
-      },
-      getQuery() {
-        return query;
-      },
-    };
-  }
+function createQueryBuilder(log: (message?: string) => void): IQueryBuilder {
+  const query: ISearchQuery = {};
+  return {
+    addRuntime(runtime: IRuntime) {
+      log(`${chalk.green('Search condition')}: Runtime === ${runtime}`);
+      query.Runtime = runtime;
+      return this;
+    },
+    addSearchQuery(name: string) {
+      log(`${chalk.green('Search condition')}: FunctionName contains ${name}`);
+      query.name = name;
+      return this;
+    },
+    getQuery() {
+      return query;
+    },
+  };
 }
 
 const regions = [
@@ -130,24 +129,23 @@ class LambdaFunctionSearch extends Command {
       char: 'R',
       description: [
         'Lambda runtime',
-        'Example: ' +
-          [
-            'nodejs18.x',
-            'nodejs20.x',
-            'nodejs22.x',
-            'python3.11',
-            'python3.12',
-            'python3.13',
-            'java11',
-            'java17',
-            'java21',
-            'dotnet6',
-            'dotnet8',
-            'ruby3.2',
-            'ruby3.3',
-            'provided.al2',
-            'provided.al2023',
-          ].join(', '),
+        `Example: ${[
+          'nodejs18.x',
+          'nodejs20.x',
+          'nodejs22.x',
+          'python3.11',
+          'python3.12',
+          'python3.13',
+          'java11',
+          'java17',
+          'java21',
+          'dotnet6',
+          'dotnet8',
+          'ruby3.2',
+          'ruby3.3',
+          'provided.al2',
+          'provided.al2023',
+        ].join(', ')}`,
       ].join('\n'),
     }),
     // [For AWS SDK] region
@@ -176,7 +174,7 @@ class LambdaFunctionSearch extends Command {
     query: ISearchQuery = {},
     nextMarker?: string,
     functions: FunctionConfiguration[] = [],
-    totalAmount: number = 0
+    totalAmount = 0
   ): Promise<{ functions: FunctionConfiguration[]; amount: number }> {
     const command = new ListFunctionsCommand({
       Marker: nextMarker,
@@ -220,11 +218,11 @@ class LambdaFunctionSearch extends Command {
 
   async run(): Promise<void> {
     const { flags } = await this.parse(LambdaFunctionSearch);
-    const queryBuilder = QueryFactory.init(this.log.bind(this));
+    const queryBuilder = createQueryBuilder(this.log.bind(this));
     if (flags.runtime) queryBuilder.addRuntime(flags.runtime);
     if (flags.search) queryBuilder.addSearchQuery(flags.search);
     const clientConfig: { profile?: string; region?: string } = {};
-    if (!flags.region) this.log(chalk.yellow('warning') + ': Missing region');
+    if (!flags.region) this.log(`${chalk.yellow('warning')}: Missing region`);
     if (flags.region) {
       if (flags.region === 'all') {
         if (flags.profile) clientConfig.profile = flags.profile;
@@ -251,10 +249,10 @@ class LambdaFunctionSearch extends Command {
       const { functions: result, amount } = await this.listAllFunctions(client, query);
       this.log(`=== ${chalk.green('Matched Functions')}: ${result.length} / ${amount} ===`);
       if (clientConfig.region) this.log(`${chalk.green('Region')} : ${clientConfig.region}`);
-      result.forEach((item: FunctionConfiguration) => {
+      for (const item of result) {
         this.log(item.FunctionName || 'unknown');
         if (showAll) console.log(item);
-      });
+      }
     } catch (e) {
       this.error(chalk.red(String(e)));
       this.exit(1);
